@@ -10,16 +10,14 @@ export class MissionService {
     { id: 6, codename: 'GHOST_RIDER', status: 'COMPLETED' }
   ];
 
-  getSummary() {
-    const sum = {};
-    for (const mission of this.missions) {
-      const status = mission.status;
-      if (!sum[status]) {
-        sum[status] = 1;
-      } else {
-        sum[status]++;
+   getSummary() {
+    const r = {ACTIVE: 0,COMPLETED: 0,FAILED: 0,};
+    for (let i = 0; i < this.missions.length; i++) {
+      const data = this.missions[i];
+      if (data.status in r) {
+        r[data.status as keyof typeof r]++;
       }
     }
-    return sum;
+    return r;
   }
 }
