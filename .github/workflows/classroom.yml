@@ -1,0 +1,67 @@
+name: Autograding
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  autograde:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout student repo
+      - name: Checkout student submission
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. Clone Tester
+      - name: Clone tester repository
+        run: |
+          git clone https://oauth2:${GITLAB_TOKEN}@gitlab.com/42bangkok-classroom/typescript-oop-quiz-4-sec34-tester.git tester
+        env:
+          GITLAB_TOKEN: ${{ secrets.OOP_CLASSROOM_GITLAB_TOKEN_BY_NEW }}
+
+      # 4. Setup files
+      - name: Setup test files
+        run: |
+          echo "=== Setup test files ==="
+          # Create necessary directories if they don't exist
+          mkdir -p src/user test
+          # Copy unit test files from tester/src to subject/src
+          rsync -av \
+            --include="*/" \
+            --include="*.spec.ts" \
+            --exclude="*" \
+            tester/src/ src/
+          # Copy e2e test files from tester/test to subject/test
+          rsync -av \
+            --include="*.e2e-spec.ts" \
+            --include="jest-e2e.json" \
+            --exclude="*" \
+            tester/test/ test/
+          # Copy package.json from tester (contains test scripts and jest config)
+          cp tester/package.json package.json
+          # Copy eslint config from tester
+          cp tester/eslint.config.mjs eslint.config.mjs || true
+          echo "=== Finish Setup test files ==="
+
+      # 5. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 6. Autograding action (will run test commands automatically)
+      - name: Autograding
+        uses: education/autograding@v1
